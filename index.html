@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>PNG to WebP Converter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+      <polyline points="7.5 4.21 12 6.81 16.5 4.21"></polyline>
+      <polyline points="7.5 19.79 7.5 14.6 3 12"></polyline>
+      <polyline points="21 12 16.5 14.6 16.5 19.79"></polyline>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+    </svg>
+    <span class="app-title">PNG to WebP Converter</span>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <path d="M3 15h6"></path>
+            <path d="M3 18h6"></path>
+            <path d="M3 12h6"></path>
+          </svg>
+          File Conversion
+        </h2>
+      </div>
+      <button id="selectBtn">
+        <svg class="icon" viewBox="0 0 24 24" fill="none">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Select PNG Files
+      </button>
+      <div class="quality-control">
+        <label for="quality">Quality:</label>
+        <input type="range" id="quality" class="quality-slider" value="80" min="1" max="100">
+        <span class="quality-value">80</span>
+      </div>
+      <div class="files-list" id="filesList">
+        No files selected
+      </div>
+      <button id="convertBtn" disabled>
+        <svg class="icon" viewBox="0 0 24 24" fill="none">
+          <path d="M21 2v6h-6"></path>
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+          <path d="M3 22v-6h6"></path>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+        Convert to WebP
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+            <polyline points="13 2 13 9 20 9"></polyline>
+          </svg>
+          Conversion Status
+        </h2>
+      </div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <script>
+  const filesList = document.getElementById('filesList')
+  const convertBtn = document.getElementById('convertBtn')
+  const qualityInput = document.getElementById('quality')
+  const qualityValue = document.querySelector('.quality-value')
+  const resultsDiv = document.getElementById('results')
+  let selectedFiles = []
+
+  qualityInput.addEventListener('input', (e) => {
+    qualityValue.textContent = e.target.value
+  })
+
+  document.getElementById('selectBtn').addEventListener('click', async () => {
+    selectedFiles = await window.electronAPI.selectFiles()
+    filesList.innerHTML = selectedFiles.length ?
+      `Selected files (${selectedFiles.length}): ${selectedFiles.join(', ')}` :
+      'No files selected'
+    convertBtn.disabled = !selectedFiles.length
+  })
+
+  convertBtn.addEventListener('click', async () => {
+    const quality = qualityInput.value
+    convertBtn.disabled = true
+    resultsDiv.innerHTML = ''
+
+    const saveDir = await window.electronAPI.selectSaveDirectory()
+    if (!saveDir) {
+      convertBtn.disabled = false
+      return
+    }
+
+    const results = await window.electronAPI.convertFiles(selectedFiles, quality, saveDir)
+
+    results.forEach(result => {
+      const div = document.createElement('div')
+      div.className = `result-item ${result.success ? 'success' : 'error'}`
+      div.innerHTML = result.success ?
+        `✅ ${result.file}` :
+        `❌ ${result.file} - ${result.error}`
+      resultsDiv.appendChild(div)
+    })
+
+    convertBtn.disabled = false
+  })
+</script>
+</body>
+</html>
